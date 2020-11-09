@@ -1,3 +1,6 @@
+# Add CSV
+*.csv
+
 # Add .dsstore
 *.DS_Store
 
