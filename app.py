@@ -46,11 +46,16 @@ def welcome():
 @app.route("/api/v1.0/precipitation")
 def precipitation():
     session = Session(engine)
+
+    # Calculate the date 1 year ago from last data point
     query_date = dt.date(2017, 8, 23) - dt.timedelta(days=365)
+
+    # Query date and precipation data from that year
     results = session.query(Measurement.station, Measurement.date, Measurement.prcp).\
         filter(Measurement.date > query_date).all()
     session.close()
 
+    # Create dictionary from each row of data and append to a list
     all_precipitation = []
     for result in results:
         precepitation_dict = {}
@@ -62,10 +67,13 @@ def precipitation():
 @app.route("/api/v1.0/stations")
 def stations():
     session = Session(engine)
+
+    # Query all stations
     results = session.query(Station.station, Station.name, \
         Station.latitude, Station.longitude, Station.elevation).all()
     session.close()
 
+    # Create dictionary from each row of data and append to a list
     all_stations = []
     for result in results:
         station_dict = {}
@@ -80,8 +88,43 @@ def stations():
 
     return jsonify(all_stations)
 
+@app.route("/api/v1.0/tobs")
+def tobs():
+    session = Session(engine)
+
+    # Get station and date for all readings
+    station_count = session.query(Measurement.station, Measurement.date).all()
+    station_count_df = pd.DataFrame(station_count)
+
+    # Find the station with the most readings
+    grouped_stations = station_count_df.groupby(['station'])
+    grouped_stations = grouped_stations.count()
+    grouped_stations = grouped_stations.sort_values(["date"], ascending=False)
+    grouped_stations = grouped_stations.reset_index(drop=False)
+
+    most_active_station = grouped_stations['station'].iloc[0]
+
+    # Calculate the date 1 year ago from last data point
+    query_date = dt.date(2017, 8, 23) - dt.timedelta(days=365)
+
+    # Query the dates and temperature observations of the most active station for the last year
+    results = session.query(Measurement.station, Measurement.date, Measurement.tobs).\
+        filter(Measurement.date > query_date).\
+        filter(Measurement.station == most_active_station)
+
+    all_temps = []
+    for result in results:
+        temp_dict = {}
+        temp_dict["station"] = result.station
+        temp_dict["date"] = result.date
+        temp_dict["temperature_observed"] = result.tobs
+
+        all_temps.append(temp_dict)
+
+    return jsonify(all_temps)
 
 
+    
 
 
 
