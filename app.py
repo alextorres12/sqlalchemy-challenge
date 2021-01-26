@@ -39,8 +39,8 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/[start]<br/>"
-        f"/api/v1.0/[start]/[end]"
+        f"Start Date only: /api/v1.0/YYYY-MM-DD<br/>"
+        f"Start and End date: /api/v1.0/YYYY-MM-DD/YYYY-MM-DD"
     )
 
 @app.route("/api/v1.0/precipitation")
@@ -112,6 +112,9 @@ def tobs():
         filter(Measurement.date > query_date).\
         filter(Measurement.station == most_active_station)
 
+    session.close()
+
+    # Create dictionary from each row of data and append to a list
     all_temps = []
     for result in results:
         temp_dict = {}
@@ -123,6 +126,50 @@ def tobs():
 
     return jsonify(all_temps)
 
+@app.route("/api/v1.0/<start>")
+def start_date_only(start):
+    session = Session(engine)
+
+    # Query dates and temperature observations after a given start date
+    results = session.query(Measurement.station, Measurement.date, Measurement.tobs).\
+        filter(Measurement.date >= start)
+
+    # Save results into a DataFrame
+    df = pd.DataFrame(results)
+
+    # Find max, min, and average temperatures
+    min_temp = df['tobs'].min()
+    max_temp = df['tobs'].max()
+    avg_temp = df['tobs'].mean()
+
+    return (
+        f"TMIN: {min_temp}<br/>"
+        f"TMAX: {max_temp}<br/>"
+        f"TAVG: {avg_temp}<br/>"
+    )
+
+@app.route("/api/v1.0/<start>/<end>")
+def start_and_end(start, end):
+    session = Session(engine)
+
+    # Query dates and temperature observations after a given start date
+    results = session.query(Measurement.station, Measurement.date, Measurement.tobs).\
+        filter(Measurement.date >= start).\
+        filter(Measurement.date <= end)
+
+    # Save results into a DataFrame
+    df = pd.DataFrame(results)
+
+    # Find max, min, and average temperatures
+    min_temp = df['tobs'].min()
+    max_temp = df['tobs'].max()
+    avg_temp = df['tobs'].mean()
+
+    return (
+        f"TMIN: {min_temp}<br/>"
+        f"TMAX: {max_temp}<br/>"
+        f"TAVG: {avg_temp}<br/>"
+    )
 
     
 
