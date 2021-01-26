@@ -59,6 +59,31 @@ def precipitation():
 
     return jsonify(all_precipitation)
 
+@app.route("/api/v1.0/stations")
+def stations():
+    session = Session(engine)
+    results = session.query(Station.station, Station.name, \
+        Station.latitude, Station.longitude, Station.elevation).all()
+    session.close()
+
+    all_stations = []
+    for result in results:
+        station_dict = {}
+
+        station_dict["station"] = result.station
+        station_dict["name"] = result.name
+        station_dict["latitude"] = result.latitude
+        station_dict["longitude"] = result.longitude
+        station_dict["elevation"] = result.elevation
+
+        all_stations.append(station_dict)
+
+    return jsonify(all_stations)
+
+
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
